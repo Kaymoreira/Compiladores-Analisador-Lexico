@@ -113,7 +113,10 @@ def analisador_lexico(codigo_fonte):
                 estado_atual = Q33
                 lexema = char
             elif char == ':':
-                estado_atual = Q33
+                estado_atual = Q38
+                lexema = char
+            elif char == '!':
+                estado_atual = Q36
                 lexema = char
             elif char.isspace():
                 continue
@@ -255,6 +258,28 @@ def analisador_lexico(codigo_fonte):
                 lexema += char
                 estado_atual = Q34
                 print('entrou', lexema , estado_atual)
+            elif char != '=':
+                estado_atual = Q0
+                print("DEU ERRO POIS SO TINHA O CARACTER : E ELE NAO EXISTE")
+            else:
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
+
+        elif estado_atual == Q36:
+            if char == '!':
+                lexema += char
+            elif char == '=':
+                lexema += char
+                estado_atual = Q34
+                print('entrou', lexema , estado_atual)
+            elif char != '=':
+                estado_atual = Q0
+                print("DEU ERRO POIS SO TINHA O CARACTER ! E ELE NAO EXISTE")
             else:
                 # Identifique o token com base no lexema atual e adicione-o à lista de tokens
                 token = identificar_token(lexema)
