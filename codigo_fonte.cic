@@ -1,0 +1,31 @@
+def _test_():
+	num_real <- +0.14e-8
+	return num_real
+
+programa //Teste1
+numero: nota_1 
+	imprima("Digite 3 nros"
+	leia(n)
+	media <- _test_(nota_1, nota_1)
+	/* caso media >= 7 entao
+		 imprima(“aprovado”) 
+	fim_caso*/ imprima(média)
+	imprima("Uma cadeia bonita"+ "-10"++200)
+fim_programa
+
+
+        elif estado_atual == Q38:
+            if char == ':':
+                lexema += char
+            elif char == '=':
+                lexema += char
+                estado_atual = Q34
+                print('entrou', lexema , estado_atual)
+            else:
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
