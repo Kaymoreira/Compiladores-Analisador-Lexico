@@ -112,6 +112,9 @@ def analisador_lexico(codigo_fonte):
             elif char == '>':
                 estado_atual = Q33
                 lexema = char
+            elif char == ':':
+                estado_atual = Q33
+                lexema = char
             elif char.isspace():
                 continue
             else:
@@ -236,6 +239,22 @@ def analisador_lexico(codigo_fonte):
                 lexema += char
                 estado_atual = Q34
 
+            else:
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
+
+        elif estado_atual == Q38:
+            if char == ':':
+                lexema += char
+            elif char == '=':
+                lexema += char
+                estado_atual = Q34
+                print('entrou', lexema , estado_atual)
             else:
                 # Identifique o token com base no lexema atual e adicione-o à lista de tokens
                 token = identificar_token(lexema)
