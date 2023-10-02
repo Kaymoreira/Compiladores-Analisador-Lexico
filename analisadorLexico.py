@@ -245,6 +245,7 @@ def analisador_lexico(codigo_fonte):
                 lexema = ""
                 estado_atual = Q0
 
+
         elif estado_atual == Q34:
             if char == '=':
                 print('entrou', lexema , estado_atual)
