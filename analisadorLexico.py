@@ -55,28 +55,38 @@ Q47 = 47
 def identificar_token(lexema):
     if re.match(r'^([A-F0-9]+(\.[A-F0-9]+)?([eE][\+\-]?[0-9]+)?)$', lexema):
         return "TK_NUMERO"
-    elif re.match(r'^[A-Z]+\d*(\.\d{2})?$', lexema):
+    elif re.match(r'^[A-Z]\$\d+(\.\d{2})?$', lexema):
         return "TK_MOEDA"
-    elif re.match(r'^[-~+*/&!=<>:|]+$', lexema):
+    elif re.match(r'^[-~+*/&!=>:| ]+$', lexema):
         return "TK_OPERADOR"
-    elif re.match(r'^[(,)]+$', lexema):
+    elif re.match(r'^[(, )\s]+$', lexema):
         return "TK_DELIMITADORES"
-    elif re.match(r'^"[a-zA-Z0-9 .]*"$', lexema):
+    elif re.match(r'<([a-z][a-z0-9]*)>', lexema) or re.match(r"^[<=]+$", lexema):
+        return "TK_ID"
+    elif re.match(r'^"[a-zA-Z0-9 .\s]*"$', lexema):
         return "TK_CADEIA"
+    elif re.match(r"^'''[a-zA-Z0-9\s\-\.]+'''$", lexema) or re.match(r"^#.*(\n)?$", lexema):
+        return "TK_COMENTARIO"
     else:
         return "TK_DESCONHECIDO"
 
 # Função principal do analisador léxico
-def analisador_lexico(codigo_fonte):
+def analisador_lexico(arquivo):
     estado_atual = Q0
     lexema = ""
     tokens = []
+    char_anterior = ''
+    
+    def exibir_erro(mensagem):
+        print(f'ERRO: {mensagem}')
+    
+    erro = False  # Flag para indicar se ocorreu um erro
 
-    for char in codigo_fonte:
+    for char in arquivo.read():
         if estado_atual == Q0:
             if char.isalpha() or char.isdigit():
                 estado_atual = Q41
-                lexema = char  # Começar novo lexema
+                lexema = char  
             elif char == '~':
                 estado_atual = Q42
                 lexema = char
@@ -113,6 +123,9 @@ def analisador_lexico(codigo_fonte):
             elif char == '>':
                 estado_atual = Q33
                 lexema = char
+            elif char == '<':
+                estado_atual = Q11
+                lexema = char
             elif char == ':':
                 estado_atual = Q38
                 lexema = char
@@ -125,6 +138,9 @@ def analisador_lexico(codigo_fonte):
             elif char == "'":
                 estado_atual = Q22
                 lexema = char
+            elif char == "#":
+                estado_atual = Q18
+                lexema = char
             
                 
             elif char.isspace():
@@ -133,10 +149,11 @@ def analisador_lexico(codigo_fonte):
                 # Caractere não reconhecido, trate o erro aqui
                 pass
 
+        # LEXEMA DE CADEIA
         elif estado_atual == Q1:
             lexema += char
             print('entrou Q1', lexema)
-            if char.isalpha() or char.isdigit():
+            if char.isalpha() or char.isdigit() or char == "\n":
                 estado_atual = Q2
         elif estado_atual == Q2:
             lexema += char
@@ -153,22 +170,62 @@ def analisador_lexico(codigo_fonte):
                 # Reinicie o lexema e volte ao estado inicial
                 lexema = ""
                 estado_atual = Q0
-                
         
+
+        # LEXEMA DE MOEDA OU DE NUMERO
         elif estado_atual == Q41:
-            if char.isalpha() or char.isdigit() or char == '.':
+            if char == '$':
+                lexema += char
+                estado_atual = Q5 
+            else:
+                    lexema = ""
+                    estado_atual = Q0
+
+        elif estado_atual == Q5:
+            if char == ' ' or char.isdigit():
+                lexema += char
+                estado_atual = Q6
+            else:
+                    exibir_erro(f"Erro no estado Q5. Esperado espaço ou dígito, encontrado: '{char}'")
+                    lexema = ""
+                    estado_atual = Q0
+
+        elif estado_atual == Q6:
+            if char.isdigit():
+                lexema += char
+            elif char == '.':
+                lexema += char
+                estado_atual = Q7
+
+        elif estado_atual == Q7:
+            if char.isdigit():
+                lexema += char
+                estado_atual = Q8
+
+        elif estado_atual == Q8:
+            if char.isdigit():
+                lexema += char
+                estado_atual = Q9
+
+        elif estado_atual == Q9:
+            if char.isdigit():
                 lexema += char
             else:
-                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
-                token = identificar_token(lexema)
-                if token != "TK_DESCONHECIDO":
-                    tokens.append((token, lexema))
-                # Reinicie o lexema e volte ao estado inicial
-                lexema = ""
-                estado_atual = Q0
+                    # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                    token = identificar_token(lexema)
+                    print(token,lexema)
+                    if token != "TK_DESCONHECIDO":
+                        tokens.append((token, lexema))
+                    elif token == "TK_DESCONHECIDO":
+                        print(f"Erro no estado Q9. Caractere inesperado: {char} no token {token}, lexema: {lexema}")
+                    # Reinicie o lexema e volte ao estado inicial
+                    lexema = ""
+                    estado_atual = Q0
+   
+         
 
 
-        #lexema de ~
+        #LEXEMA DE OPERADORES 
         elif estado_atual == Q42:
             if char == '~':
                 lexema += char
@@ -266,8 +323,15 @@ def analisador_lexico(codigo_fonte):
                 estado_atual = Q0
 
         elif estado_atual == Q33:
-            if char == '>':
-                lexema += char
+            if char != '=':
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                print(token)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
 
             elif char == '=':
                 lexema += char
@@ -337,7 +401,8 @@ def analisador_lexico(codigo_fonte):
         # Verifique o estado final para o último token
 
 
-
+        
+        
 
 
 
@@ -358,52 +423,97 @@ def analisador_lexico(codigo_fonte):
                 estado_atual = Q0
                 
         elif estado_atual == Q29:
-            if char == '(':
-                lexema += char
-            else:
                 # Identifique o token com base no lexema atual e adicione-o à lista de tokens
                 token = identificar_token(lexema)
+                print('entrou aq poga', token)
                 if token != "TK_DESCONHECIDO":
                     tokens.append((token, lexema))
                 # Reinicie o lexema e volte ao estado inicial
                 lexema = ""
                 estado_atual = Q0
-
-        elif estado_atual == Q30:
-            if char == ')':
-                lexema += char
-            else:
-                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
-                token = identificar_token(lexema)
-                if token != "TK_DESCONHECIDO":
-                    tokens.append((token, lexema))
-                # Reinicie o lexema e volte ao estado inicial
-                lexema = ""
-                estado_atual = Q0
-
-
-        # COMENTARIO DE LINHA
-        
-
-        #LEXEMAS COMENTARIO
-        elif estado_atual == Q22:
-            if char == "'":
-                lexema += char
-                estado_atual = Q23
-                print('entrou aq')
-
-
+                # Volte para o início do último token
+                '''arquivo.seek(arquivo.tell() - len(lexema))
+                # Leia o próximo caractere
+                char = arquivo.read(1)
+                # Se o char lido for um espaço em branco, leia novamente
+                while char.isspace():
+                    char = arquivo.read(1)
+                print(char, 'AQUIII', lexema)'''
                 
 
-        elif estado_atual == Q23:
-            if char == "'":
+        elif estado_atual == Q30:
+                print('ultimoOOO')
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                print("entrou no ultimo", token)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
+                
+
+
+        #LEXEMAS TK_ID
+        elif estado_atual == Q11:
+            lexema+=char
+            print('pca', lexema)
+            if char != '=':
+                print('entroudada')
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                print(token)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
+            elif char == '=':
+                estado_atual = Q32
+            elif char.isalpha():
                 lexema += char
-                estado_atual = Q24
+                estado_atual = Q12
+
+        # continuar daqui amanhã fazer salvar os caracteres do estado Q12 pra depois ir pro estado >
+        elif estado_atual == Q12:
+                if char.isalpha():
+                    print()
+
+
+        
+
+        # COMENTARIO DE LINHA
+        elif estado_atual == Q18:
+            print('ENTROU NO COMENTARIO DE #')
+            if char.isalpha() or char.isdigit() or char == ' ':
+                lexema += char
+                print('ENTROU NO COMENTARIO DE #', lexema)
+            elif char == '\n':
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                print(token, lexema)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
+                estado_atual = Q0
+                
+                
+        elif estado_atual == Q20:
+                    # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                    token = identificar_token(lexema)
+                    print(token,lexema)
+                    if token != "TK_DESCONHECIDO":
+                        tokens.append((token, lexema))
+                    # Reinicie o lexema e volte ao estado inicial
+                    lexema = ""
+                    estado_atual = Q0
+            
 
 
 
         elif estado_atual == Q24:
-            if char.isdigit() or char.isalpha():
+            if char.isdigit() or char.isalpha() or char == '-' or char == '.' or char == ' ':
                 lexema += char
 
             elif char.isspace():
@@ -422,12 +532,64 @@ def analisador_lexico(codigo_fonte):
             if char == "'":
                 lexema += char
                 estado_atual = Q27
+                print(lexema)
 
 
         elif estado_atual == Q27:
             if char == "'":
                 lexema += char
+                print("Entrou no Q27", lexema, char)
+            else:
+                    # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                    token = identificar_token(lexema)
+                    print(token,lexema)
+                    if token != "TK_DESCONHECIDO":
+                        tokens.append((token, lexema))
+                    # Reinicie o lexema e volte ao estado inicial
+                    lexema = ""
+                    estado_atual = Q0
 
+        #LEXEMAS COMENTARIO
+        elif estado_atual == Q22:
+                lexema += char
+                estado_atual = Q23
+                print('entrou aq', lexema)
+                
+
+        elif estado_atual == Q23:
+            if char == "'":
+                lexema += char
+                estado_atual = Q24
+
+
+
+        elif estado_atual == Q24:
+            if char.isdigit() or char.isalpha() or char == '-' or char == '.' or char == ' ':
+                lexema += char
+
+            elif char.isspace():
+                continue
+            else :
+                lexema+=char
+                estado_atual = Q25
+
+        elif estado_atual == Q25:
+            if char == "'":
+                lexema += char
+                estado_atual = Q26
+
+
+        elif estado_atual == Q26:
+            if char == "'":
+                lexema += char
+                estado_atual = Q27
+                print(lexema)
+
+
+        elif estado_atual == Q27:
+            if char == "'":
+                lexema += char
+                print("Entrou no Q27", lexema, char)
             else:
                     # Identifique o token com base no lexema atual e adicione-o à lista de tokens
                     token = identificar_token(lexema)
@@ -442,7 +604,9 @@ def analisador_lexico(codigo_fonte):
       
 
 
-
+    if erro:
+        lexema = ""
+        estado_atual = Q0
 
  
         # Implemente outros estados e transições...
@@ -451,14 +615,13 @@ def analisador_lexico(codigo_fonte):
 
     return tokens
 
-# Função para ler o conteúdo do arquivo
-def ler_arquivo(nome_arquivo):
+# Função principal do analisador léxico
+def analisador_lexico_arquivo(nome_arquivo):
     with open(nome_arquivo, 'r') as arquivo:
-        return arquivo.read()
+        return analisador_lexico(arquivo)
 
 # Exemplo de uso
 nome_arquivo = "texto.cic"  # Substitua pelo nome do seu arquivo
-codigo_fonte = ler_arquivo(nome_arquivo)
-tokens = analisador_lexico(codigo_fonte)
+tokens = analisador_lexico_arquivo(nome_arquivo)
 for token, lexema in tokens:
     print(f"Token: {token}, Lexema: {lexema}")
