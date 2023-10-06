@@ -49,6 +49,7 @@ Q44 = 44
 Q45 = 45
 Q46 = 46
 Q47 = 47
+Q48 = 48
 
 palavras_reservadas = ['fim_programa', 'programa', 'se', 'senao', 'entao', 'imprima', 'leia', 'enquanto']
 
@@ -60,7 +61,7 @@ def identificar_token(lexema):
     if lexema.isdigit() or (lexema[0] == '-' and lexema[1:].isdigit()):
         return "TK_NUMERO"
     
-    if lexema.startswith(('A', 'B', 'C', 'D', 'E', 'F')) and lexema[1] == '$' and lexema[2:].replace('.', '').isdigit():
+    if lexema.startswith(('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'U', 'R',)) and lexema[1] == '$' and lexema[2:].replace('.', '').isdigit():
         return "TK_MOEDA"
     
     if all(char in '-~+*/&!=>:| ' for char in lexema):
@@ -77,6 +78,9 @@ def identificar_token(lexema):
     
     if lexema.startswith("'''") and lexema.endswith("'''"):
         return "TK_COMENTARIO"
+ 
+    if lexema == '\n':
+        return "TK_QUEBRADELINHA"
     
     return "TK_DESCONHECIDO"
 
@@ -86,17 +90,21 @@ def analisador_lexico(arquivo):
     estado_atual = Q0
     lexema = ""
     tokens = []
-    char_anterior = ''
     
     def exibir_erro(mensagem):
         print(f'ERRO: {mensagem}')
     
     erro = False  # Flag para indicar se ocorreu um erro
 
+
+
     for char in arquivo.read():
         if estado_atual == Q0:
-            if char.isalpha() or char.isdigit():
+            if 'A' <= char <= 'Z' or char.isdigit():
                 estado_atual = Q41
+                lexema = char  
+            elif 'a' <= char <= 'z' or char == '_':
+                estado_atual = Q39
                 lexema = char  
             elif char == '~':
                 estado_atual = Q42
@@ -152,6 +160,9 @@ def analisador_lexico(arquivo):
             elif char == "#":
                 estado_atual = Q18
                 lexema = char
+            elif char == "\n":
+                estado_atual = Q48
+                lexema = char
             
                 
             elif char.isspace():
@@ -159,6 +170,38 @@ def analisador_lexico(arquivo):
             else:
                 # Caractere não reconhecido, trate o erro aqui
                 pass
+
+
+        # TRATAMENTO \n
+        elif estado_atual == Q48:
+            if char == '\n':
+                lexema += char
+                print(lexema)
+            else:
+                    # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                    token = identificar_token(lexema)
+                    if token != "TK_DESCONHECIDO":
+                        tokens.append((token, lexema))
+                    # Reinicie o lexema e volte ao estado inicial
+                    lexema = ""
+                    estado_atual = Q0
+
+        #LEXEMA DAS PALAVRAS RESERVADAS 
+        elif estado_atual == Q39:
+            if ('a' <= char <= 'z') or char == '_':
+                lexema += char
+                print(lexema)
+            else:
+                estado_atual = Q40
+        
+        elif estado_atual == Q40:
+                estado_atual = Q0
+                # Identifique o token com base no lexema atual e adicione-o à lista de tokens
+                token = identificar_token(lexema)
+                if token != "TK_DESCONHECIDO":
+                    tokens.append((token, lexema))
+                # Reinicie o lexema e volte ao estado inicial
+                lexema = ""
 
         # LEXEMA DE CADEIA
         elif estado_atual == Q1:
@@ -704,14 +747,6 @@ def analisador_lexico(arquivo):
                     lexema = ""
                     estado_atual = Q0
                     
-        
-      
-
-
-    if erro:
-        lexema = ""
-        estado_atual = Q0
-
  
         # Implemente outros estados e transições...
 
@@ -724,10 +759,14 @@ def analisador_lexico_arquivo(nome_arquivo):
     with open(nome_arquivo, 'r', encoding='utf-8') as arquivo:
         return analisador_lexico(arquivo)
 
+# Tamanho fixo de cada coluna
+coluna_token = 18
+coluna_lexema = 18
+
 # Exemplo de uso
 nome_arquivo = "texto.cic"  # Substitua pelo nome do seu arquivo
 tokens = analisador_lexico_arquivo(nome_arquivo)
-print("{:<10}  |  {:<10}".format("Token", "Lexema"))
-print("-" * 20)
+print("{:<{}} | {:<{}}".format("Token", coluna_token, "Lexema", coluna_lexema))
+print("-" * (coluna_token + coluna_lexema + 3))
 for token, lexema in tokens:
-    print("{:<10}  |  {:<10}".format(token, lexema))
+    print("{:<{}} | {:<{}}".format(token, coluna_token, lexema, coluna_lexema))
