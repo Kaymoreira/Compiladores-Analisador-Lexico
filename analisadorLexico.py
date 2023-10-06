@@ -1,4 +1,4 @@
-import re
+# from tabulate import tabulate
 
 # Defina os estados do autômato como constantes
 Q0 = 0
@@ -56,22 +56,30 @@ palavras_reservadas = ['fim_programa', 'programa', 'se', 'senao', 'entao', 'impr
 def identificar_token(lexema):
     if lexema in palavras_reservadas:
         return f"TK_{lexema.upper()}"
-    elif re.match(r'^([A-F0-9]+(\.[A-F0-9]+)?([eE][\+\-]?[A-F0-9]+)?)$', lexema):
+    
+    if lexema.isdigit() or (lexema[0] == '-' and lexema[1:].isdigit()):
         return "TK_NUMERO"
-    elif re.match(r'^[A-Z]\$\d+(\.\d{2})?$', lexema):
+    
+    if lexema.startswith(('A', 'B', 'C', 'D', 'E', 'F')) and lexema[1] == '$' and lexema[2:].replace('.', '').isdigit():
         return "TK_MOEDA"
-    elif re.match(r'^[-~+*/&!=>:| ]+$', lexema):
+    
+    if all(char in '-~+*/&!=>:| ' for char in lexema):
         return "TK_OPERADOR"
-    elif re.match(r'^[(, )\s]+$', lexema):
+    
+    if all(char in ', ' for char in lexema):
         return "TK_DELIMITADORES"
-    elif re.match(r'<([a-z][a-z0-9]*)>', lexema) or re.match(r"^[<=]+$", lexema):
+    
+    if lexema.startswith('<') and lexema.endswith('>') and lexema[1:-1].isidentifier():
         return "TK_ID"
-    elif re.match(r'^"[a-zA-Z0-9 .\s]*"$', lexema):
+    
+    if lexema.startswith('"') and lexema.endswith('"'):
         return "TK_CADEIA"
-    elif re.match(r"^'''[a-zA-Z0-9\s\-\.]+'''$", lexema) or re.match(r"^#.*(\n)?$", lexema):
+    
+    if lexema.startswith("'''") and lexema.endswith("'''"):
         return "TK_COMENTARIO"
-    else:
-        return "TK_DESCONHECIDO"
+    
+    return "TK_DESCONHECIDO"
+
 
 # Função principal do analisador léxico
 def analisador_lexico(arquivo):
@@ -87,7 +95,7 @@ def analisador_lexico(arquivo):
 
     for char in arquivo.read():
         if estado_atual == Q0:
-            if char.isalpha() or char.isdigit() or char.isalnum():
+            if char.isalpha() or char.isdigit():
                 estado_atual = Q41
                 lexema = char  
             elif char == '~':
@@ -183,7 +191,6 @@ def analisador_lexico(arquivo):
             elif char == '.':
                 lexema += char
                 estado_atual = Q10
-
                     
         elif estado_atual == Q4:
 
@@ -720,5 +727,7 @@ def analisador_lexico_arquivo(nome_arquivo):
 # Exemplo de uso
 nome_arquivo = "texto.cic"  # Substitua pelo nome do seu arquivo
 tokens = analisador_lexico_arquivo(nome_arquivo)
+print("{:<10}  |  {:<10}".format("Token", "Lexema"))
+print("-" * 20)
 for token, lexema in tokens:
-    print(f"Token: {token}, Lexema: {lexema}")
+    print("{:<10}  |  {:<10}".format(token, lexema))
