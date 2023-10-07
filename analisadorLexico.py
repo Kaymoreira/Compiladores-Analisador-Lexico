@@ -60,6 +60,12 @@ def is_valid_hexadecimal(s):
     except ValueError:
         return False
 
+def is_valid_scientific_notation(s):
+    parts = s.split('e')
+    if len(parts) == 2 and all(part.replace('-', '').isdigit() for part in parts):
+        return True
+    return False
+
 # Função para identificar tokens
 def identificar_token(lexema):
     if lexema in palavras_reservadas:
@@ -70,15 +76,10 @@ def identificar_token(lexema):
         if len(parts) == 2 and all(part.isalnum() for part in parts):
             return "TK_NUMERO"
     
-    if 'e' in lexema:
-        parts = lexema.split('e')
-        if len(parts) == 2 and all(part.replace('-', '').isdigit() for part in parts):
-            return "TK_NUMERO"
+    if 'e' in lexema and is_valid_scientific_notation(lexema):
+        return "TK_NUMERO"
 
     if lexema.isdigit() or (lexema.startswith('-') and lexema[1:].isdigit()):
-        return "TK_NUMERO"
-    
-    if lexema.isalnum():
         return "TK_NUMERO"
     
     
@@ -99,8 +100,11 @@ def identificar_token(lexema):
     
     if lexema.startswith("'''") and lexema.endswith("'''"):
         return "TK_COMENTARIO"
+    
+    if lexema.startswith("#") and " " in lexema:
+        return "TK_COMENTARIO"
  
-    if lexema == '\n':
+    if lexema == '\n' or lexema == '\t':
         return "TK_QUEBRADELINHA"
     
     return "TK_DESCONHECIDO"
@@ -185,7 +189,7 @@ def analisador_lexico(arquivo):
             elif char == "#":
                 estado_atual = Q18
 
-            elif char == "\n":
+            elif char == "\n" or char == '\t':
                 estado_atual = Q48
 
             
@@ -198,7 +202,7 @@ def analisador_lexico(arquivo):
 
         # TRATAMENTO \n
         elif estado_atual == Q48:
-            if char == "\n":
+            if char == "\n" or char == '\t':
                 lexema += char
                 char = arquivo.read(1)
                 print(lexema)
@@ -665,10 +669,12 @@ def analisador_lexico(arquivo):
             elif char == '>':
                     lexema += char
                     estado_atual = Q13
+                    char = arquivo.read(1)
              
         elif estado_atual == Q13:
                 # Identifique o token com base no lexema atual e adicione-o à lista de tokens
                 token = identificar_token(lexema)
+                char = arquivo.read(1)
                 if token != "TK_DESCONHECIDO":
                     tokens.append((token, lexema))
                 # Reinicie o lexema e volte ao estado inicial
