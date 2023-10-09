@@ -1,5 +1,4 @@
 import unicodedata
-# from tabulate import tabulate
 
 # Defina os estados do autômato como constantes
 Q0 = 0
@@ -127,13 +126,7 @@ def analisador_lexico(arquivo):
     lexema = ""
     tokens = []
     linha = 1
-    coluna = 0
     
-    def exibir_erro(mensagem):
-        print(f'ERRO: {mensagem}')
-    
-    erro = False  # Flag para indicar se ocorreu um erro
-
     char = arquivo.read(1)  # Leia um caractere por vez
 
     while char:
@@ -208,14 +201,10 @@ def analisador_lexico(arquivo):
 
             elif char == "\n" or char == '\t':
                 estado_atual = Q48
-
-            
-                
             
             else:
-                # Caractere não reconhecido, trate o erro aqui
-                pass
 
+                pass
 
         # TRATAMENTO \n
         elif estado_atual == Q48:
@@ -349,14 +338,7 @@ def analisador_lexico(arquivo):
                 lexema += char
                 char = arquivo.read(1)
                 estado_atual = Q4
-                
-                
-
-                
-
-
-
-        
+                   
         
         # LEXEMA MOEDA
         elif estado_atual == Q5:
@@ -405,8 +387,6 @@ def analisador_lexico(arquivo):
                     lexema = ""
                     estado_atual = Q0
    
-         
-
 
         #LEXEMA DE OPERADORES 
         elif estado_atual == Q42:
@@ -576,17 +556,7 @@ def analisador_lexico(arquivo):
                 estado_atual = Q0
             
 
-
         # Verifique o estado final para o último token
-
-
-        
-        
-
-
-
-
-            
 
         #LEXEMAS DELIMITADORES
         elif estado_atual == Q28:
@@ -673,12 +643,7 @@ def analisador_lexico(arquivo):
                 # Reinicie o lexema e volte ao estado inicial
                 lexema = ""
                 estado_atual = Q0
-            
-
-
-
-
-        
+      
 
         # COMENTARIO DE LINHA
         elif estado_atual == Q18:
@@ -701,8 +666,6 @@ def analisador_lexico(arquivo):
                     # Reinicie o lexema e volte ao estado inicial
                     lexema = ""
                     estado_atual = Q0
-            
-
 
 
         elif estado_atual == Q24:
